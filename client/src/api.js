@@ -12,4 +12,9 @@ export const submitFeedback = (session, feedback) => api("/api/feedback", { meth
 export const getFeedback = (session, filters = {}) => api(`/api/feedback?${new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== "" && value != null))}`, {}, session);
 export const updateStatus = (session, id, status) => api(`/api/feedback/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }, session);
 export const action = (session, id, type, method = "POST", body) => api(`/api/feedback/${id}/${type}`, { method, body: body ? JSON.stringify(body) : undefined }, session);
-export const exportUrl = (filters) => `${API_URL}/api/feedback/export?${new URLSearchParams(Object.entries(filters).filter(([, value]) => value))}`;
+export async function exportFeedback(session, filters) {
+  const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value && value !== 1));
+  const response = await fetch(`${API_URL}/api/feedback/export?${query}`, { headers: { Authorization: `Bearer ${session.token}` } });
+  if (!response.ok) { const body = await response.json(); throw new ApiError(body.error?.message ?? "Export failed.", response.status, body.error?.code); }
+  return response.blob();
+}
