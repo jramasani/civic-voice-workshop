@@ -29,8 +29,8 @@ export const openai = {
   summarize: (message) => textResponse("Summarize this civic feedback in one concise sentence.", message),
   translate: (message) => textResponse("Translate this civic feedback into English. Return only the translation.", message),
   async suggestRouting(message) {
-    const value = await textResponse("Return JSON only: {\"urgency\":\"Low|Medium|High\",\"team\":\"short responsible team\"} for this civic feedback.", message);
-    return JSON.parse(value);
+    const result = await request("/responses", { model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini", instructions: "Suggest a civic-feedback urgency and responsible team.", input: message, text: { format: { type: "json_schema", name: "routing_suggestion", strict: true, schema: { type: "object", properties: { urgency: { type: "string", enum: ["Low", "Medium", "High"] }, team: { type: "string" } }, required: ["urgency", "team"], additionalProperties: false } } } });
+    return JSON.parse(result.output_text);
   },
   async synthesize(message) {
     const key = await configuredKey();

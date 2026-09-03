@@ -49,13 +49,14 @@ describe("CivicVoice baseline API", () => {
   it("blocks the feedback list without an opaque admin session", async () => {
     const app = await testApp();
     const response = await request(app).get("/api/feedback");
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(401);
   });
 
-  it("does not trust a spoofed role header", async () => {
+  it("does not let a signed-in citizen escalate with a spoofed role header", async () => {
     const app = await testApp();
-    const response = await request(app).get("/api/feedback").set("x-user-role", "admin");
-    expect(response.status).toBe(401);
+    const token = await session(app);
+    const response = await request(app).get("/api/feedback").set("Authorization", `Bearer ${token}`).set("x-user-role", "admin");
+    expect(response.status).toBe(403);
   });
 
   it("rejects blank feedback on the API", async () => {
