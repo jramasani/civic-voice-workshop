@@ -10,7 +10,6 @@ export const login = (credentials) => api("/api/login", { method: "POST", body: 
 export const health = () => api("/api/health");
 export const submitFeedback = (session, feedback) => api("/api/feedback", { method: "POST", body: JSON.stringify(feedback) }, session);
 export const getFeedback = (session, filters = {}) => api(`/api/feedback?${new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== "" && value != null))}`, {}, session);
-export const getFeedbackDetail = (session, id) => api(`/api/feedback/${id}`, {}, session);
 export const updateStatus = (session, id, status) => api(`/api/feedback/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }, session);
 export const action = (session, id, type, method = "POST", body) => api(`/api/feedback/${id}/${type}`, { method, body: body ? JSON.stringify(body) : undefined }, session);
 export async function exportFeedback(session, filters) {

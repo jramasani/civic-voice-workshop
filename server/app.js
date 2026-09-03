@@ -8,9 +8,9 @@ const categories = ["Estate", "Transport", "Environment", "Other"];
 const statuses = ["New", "In review", "Closed"];
 const urgencies = ["Low", "Medium", "High"];
 const fail = (res, status, code, message) => res.status(status).json({ error: { code, message } });
-const text = (value) => String(value ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").replace(/<[^>]*>/g, "").trim();
+const text = (value) => String(value ?? "").replace(/[\u0000-\u001F\u007F]/g, "").trim();
 const fallbackCategory = (message) => /bus|train|traffic|road|walkway|transport/i.test(message) ? "Transport" : /tree|park|rubbish|recycl|environment|drain/i.test(message) ? "Environment" : /lift|block|estate|void deck|neighbour/i.test(message) ? "Estate" : "Other";
-const csv = (value) => { const v = String(value ?? ""); return `"${(/^[=+\-@]/.test(v) ? `'${v}` : v).replaceAll('"', '""')}"`; };
+const csv = (value) => { const v = String(value ?? "").replace(/\r?\n/g, " "); return `"${(/^[=+\-@]/.test(v) ? `'${v}` : v).replaceAll('"', '""')}"`; };
 
 function passwordMatches(user, password) {
   if (!user?.passwordHash) return false;
@@ -34,7 +34,6 @@ export async function createApp(options = {}) {
   const attempts = new Map();
   const app = express();
   app.use(cors()); app.use(express.json());
-  app.use((err, _req, res, next) => err?.type === "entity.parse.failed" ? fail(res, 400, "INVALID_JSON", "Request body must be valid JSON.") : next(err));
   const auth = (role) => (req, res, next) => {
     const token = req.header("authorization")?.replace(/^Bearer\s+/i, "");
     const session = token && sessions.get(token);
@@ -62,7 +61,7 @@ export async function createApp(options = {}) {
   app.get("/api/feedback", auth("admin"), (req, res) => {
     if (req.query.category && !categories.includes(req.query.category)) return fail(res, 400, "VALIDATION_ERROR", "Choose a valid feedback category.");
     if (req.query.status && !statuses.includes(req.query.status)) return fail(res, 400, "VALIDATION_ERROR", "Choose a valid feedback status.");
-    const all = list(db, req.query), limit = 10, requestedPage = Number.parseInt(req.query.page, 10) || 1, pages = Math.max(1, Math.ceil(all.length / limit)), page = Math.min(Math.max(requestedPage, 1), pages);
+    const all = list(db, req.query), limit = Math.min(Math.max(+req.query.limit || 10, 1), 100), pages = Math.max(1, Math.ceil(all.length / limit)), page = Math.min(Math.max(+req.query.page || 1, 1), pages);
     res.json({ feedback: all.slice((page - 1) * limit, page * limit), pagination: { page, limit, total: all.length, pages } });
   });
   app.post("/api/feedback", auth("citizen"), async (req, res) => {

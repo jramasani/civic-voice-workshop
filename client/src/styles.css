@@ -3,12 +3,6 @@
 :root[data-theme="dark"] body, :root[data-theme="dark"] .login-panel, :root[data-theme="dark"] .site-header { background: #182027; color: #f4f1e9; }
 :root[data-theme="dark"] .brand, :root[data-theme="dark"] .feedback-link { color: #f4f1e9; }
 :root[data-theme="dark"] .form-card, :root[data-theme="dark"] .feedback-list, :root[data-theme="dark"] input, :root[data-theme="dark"] textarea, :root[data-theme="dark"] select { background: #253039; color: #f4f1e9; border-color: #50606a; }
-:root[data-theme="dark"] .summary-card { background: #253039; border-color: #50606a; color: #f4f1e9; }
-:root[data-theme="dark"] label, :root[data-theme="dark"] .muted, :root[data-theme="dark"] .feedback-meta, :root[data-theme="dark"] .summary-card span { color: #c7d1d7; }
-:root[data-theme="dark"] .role-switch { background: #33414b; }
-:root[data-theme="dark"] .role-switch button { color: #d5dde1; }
-:root[data-theme="dark"] .role-switch button.active { background: #f4f1e9; color: #17222b; }
-:root[data-theme="dark"] .success-banner { background: #1f5932; color: #e3f8e9; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button, input, textarea, select { font: inherit; }
