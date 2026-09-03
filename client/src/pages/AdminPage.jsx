@@ -1,34 +1,14 @@
-import { useEffect, useState } from "react";
-import { getFeedback } from "../api";
-
-export function AdminPage({ user }) {
-  const [feedback, setFeedback] = useState([]);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    getFeedback(user).then((response) => setFeedback(response.feedback)).catch((requestError) => setError(requestError.message));
-  }, [user]);
-
-  return (
-    <main className="page-shell admin-shell">
-      <div className="page-heading">
-        <div className="eyebrow">Admin workspace</div>
-        <h1>Feedback inbox</h1>
-        <p>A simple view of feedback received from members of the public.</p>
-      </div>
-      {error && <p className="error-message">{error}</p>}
-      <section className="feedback-list">
-        <div className="list-header"><strong>Latest feedback</strong><span>{feedback.length} items</span></div>
-        {feedback.map((item) => (
-          <article className="feedback-row" key={item.id}>
-            <div>
-              <div className="feedback-meta">{item.name} · {new Date(item.createdAt).toLocaleDateString()}</div>
-              <p>{item.message}</p>
-            </div>
-            <span className="status-pill">{item.status}</span>
-          </article>
-        ))}
-      </section>
-    </main>
-  );
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { action, getFeedback, updateStatus } from "../api";
+const statuses = ["New", "In review", "Closed"], categories = ["Estate", "Transport", "Environment", "Other"];
+const mask = (id) => id ? `${id[0]}••••••${id.slice(-2)}` : "";
+export function AdminPage({ session }) {
+  const [feedback, setFeedback] = useState([]), [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 }), [filters, setFilters] = useState({ category: "", status: "", page: 1 }), [search, setSearch] = useState(""), [loading, setLoading] = useState(true), [error, setError] = useState(""), [detail, setDetail] = useState(null);
+  const load = useCallback(async () => { setLoading(true); setError(""); try { const result = await getFeedback(session, filters); setFeedback(result.feedback); setPagination(result.pagination); } catch (e) { setError(e.message); } finally { setLoading(false); } }, [session, filters]);
+  useEffect(() => { load(); }, [load]);
+  const visible = useMemo(() => feedback.filter((item) => `${item.name} ${item.message}`.toLowerCase().includes(search.toLowerCase())), [feedback, search]);
+  const update = async (id, status) => { try { await updateStatus(session, id, status); load(); } catch (e) { setError(e.message); } };
+  const ai = async (id, type) => { try { await action(session, id, type); load(); } catch (e) { setError(e.message); } };
+  const counts = Object.fromEntries(["Total", ...statuses].map((status) => [status, status === "Total" ? pagination.total : feedback.filter((item) => item.status === status).length]));
+  return <main className="page-shell admin-shell"><div className="page-heading"><div className="eyebrow">Admin workspace</div><h1>Feedback inbox</h1></div><div className="summary-cards">{Object.entries(counts).map(([label, value]) => <div className="summary-card" key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><section className="feedback-list"><div className="inbox-controls"><input aria-label="Search feedback" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search messages or names" /><select value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value, page: 1 })}><option value="">All categories</option>{categories.map((item) => <option key={item}>{item}</option>)}</select><select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}><option value="">All statuses</option>{statuses.map((item) => <option key={item}>{item}</option>)}</select><button className="text-button" onClick={() => setFilters({ category: "", status: "", page: 1 })}>Clear</button></div>{error && <p className="error-message" role="alert">{error} <button onClick={load}>Retry</button></p>}{loading ? <p role="status">Loading feedback…</p> : detail ? <article className="detail"><button className="text-button" onClick={() => setDetail(null)}>← Back to inbox</button><h2>{detail.name}</h2><p className="muted">{mask(detail.nric)} · {detail.reference}</p><p>{detail.message}</p>{detail.translation && <p><strong>English translation:</strong> {detail.translation}</p>}<button onClick={() => ai(detail.id, "summary")}>Summarize</button><button onClick={() => ai(detail.id, "translation")}>Translate to English</button><button onClick={() => ai(detail.id, "routing-suggestion")}>Suggest routing</button></article> : visible.length ? visible.map((item) => <article className="feedback-row" key={item.id}><div><button className="feedback-link" onClick={() => setDetail(item)}>{item.name}</button><div className="feedback-meta">{mask(item.nric)} · {item.category} · {new Date(item.createdAt).toLocaleDateString()}</div><p>{item.message}</p></div><select className="status-pill" value={item.status} onChange={(e) => update(item.id, e.target.value)}>{statuses.map((status) => <option key={status}>{status}</option>)}</select></article>) : <p>{feedback.length ? "No feedback matches your search." : "No feedback has been submitted yet."}</p>}<div className="pagination"><button disabled={pagination.page <= 1} onClick={() => setFilters({ ...filters, page: pagination.page - 1 })}>Previous</button><span>Page {pagination.page} of {pagination.pages}</span><button disabled={pagination.page >= pagination.pages} onClick={() => setFilters({ ...filters, page: pagination.page + 1 })}>Next</button></div></section></main>;
 }
