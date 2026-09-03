@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 import cors from "cors";
 import express from "express";
 import { createDb } from "./lib/db.js";
-import { openai } from "./lib/openai.js";
 
 const categories = ["Estate", "Transport", "Environment", "Other"];
 const statuses = ["New", "In review", "Closed"];
@@ -27,7 +26,7 @@ function list(db, query) {
 
 export async function createApp(options = {}) {
   const db = options.db ?? await createDb();
-  const ai = options.ai ?? openai;
+  const ai = options.ai ?? {};
   const sessions = options.sessions ?? new Map();
   const attempts = new Map();
   const app = express();
