@@ -19,11 +19,9 @@ function passwordMatches(user, password) {
 }
 
 function list(db, query) {
-  const search = String(query.search ?? "").trim().toLowerCase();
   return [...db.data.feedback]
     .filter((item) => !query.category || item.category === query.category)
     .filter((item) => !query.status || item.status === query.status)
-    .filter((item) => !search || `${item.name} ${item.message}`.toLowerCase().includes(search))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
