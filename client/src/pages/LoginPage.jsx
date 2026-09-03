@@ -1,8 +1,64 @@
-import { useEffect, useState } from "react";
-import { health, login } from "../api";
+import { useState } from "react";
+import { login } from "../api";
+
 export function LoginPage({ onLogin }) {
-  const [role, setRole] = useState("citizen"), [nric, setNric] = useState(""), [password, setPassword] = useState(""), [error, setError] = useState(""), [busy, setBusy] = useState(false), [online, setOnline] = useState(null);
-  useEffect(() => { let active = true; const check = () => health().then(() => active && setOnline(true)).catch(() => active && setOnline(false)); check(); const timer = setInterval(check, 5000); return () => { active = false; clearInterval(timer); }; }, []);
-  async function submit(event) { event.preventDefault(); const id = nric.trim().toUpperCase(); if (!/^S\d{7}[A-Z]$/.test(id)) return setError("Enter a valid workshop ID, such as S0000001A."); setBusy(true); setError(""); try { onLogin(await login({ nric: id, password, role })); } catch (e) { setError(e.message); } finally { setBusy(false); } }
-  return <main className="split-layout"><section className="intro-panel"><div className="eyebrow">A simple way to be heard</div><h1>Help improve<br />our neighbourhood.</h1><p>Share what is working, what needs attention, and what would make your community better.</p></section><section className="login-panel"><div className="login-card"><div className="eyebrow">Secure sign in</div><h2>Welcome to CivicVoice</h2><p className="muted" role="status">API: {online === null ? "checking…" : online ? "available" : "unavailable — retrying"}</p><div className="role-switch" role="tablist" aria-label="Sign-in mode"><button aria-selected={role === "citizen"} className={role === "citizen" ? "active" : ""} onClick={() => setRole("citizen")} type="button">Public</button><button aria-selected={role === "admin"} className={role === "admin" ? "active" : ""} onClick={() => setRole("admin")} type="button">Admin</button></div><form onSubmit={submit}><label htmlFor="nric">NRIC<input id="nric" value={nric} onChange={(e) => setNric(e.target.value)} aria-invalid={!!error} placeholder="e.g. S0000001A" /></label><label htmlFor="password">Password<input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" /></label>{error && <p className="error-message" role="alert">{error}</p>}<button className="primary-button" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button></form><details className="demo-help"><summary>Workshop demo accounts</summary><p>Public: S0000001A / citizen123</p><p>Admin: S0000002B / admin123</p></details></div></section></main>;
+  const [role, setRole] = useState("citizen");
+  const [nric, setNric] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const session = await login({ nric, password, role });
+      onLogin(session);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="split-layout">
+      <section className="intro-panel">
+        <div className="eyebrow">A simple way to be heard</div>
+        <h1>Help improve<br />our neighbourhood.</h1>
+        <p>Share what is working, what needs attention, and what would make your community better.</p>
+        <div className="quote-card">
+          <span className="quote-mark">“</span>
+          Every useful change starts with someone taking a minute to speak up.
+        </div>
+      </section>
+      <section className="login-panel">
+        <div className="login-card">
+          <div className="eyebrow">Secure sign in</div>
+          <h2>Welcome to CivicVoice</h2>
+          <p className="muted">Use your NRIC and password to continue.</p>
+          <div className="role-switch" role="tablist" aria-label="Sign-in mode">
+            <button className={role === "citizen" ? "active" : ""} onClick={() => setRole("citizen")} type="button">Public</button>
+            <button className={role === "admin" ? "active" : ""} onClick={() => setRole("admin")} type="button">Admin</button>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <label>NRIC
+              <input value={nric} onChange={(event) => setNric(event.target.value)} placeholder="e.g. S0000001A" />
+            </label>
+            <label>Password
+              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" />
+            </label>
+            {error && <p className="error-message">{error}</p>}
+            <button className="primary-button" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+          </form>
+          <details className="demo-help">
+            <summary>Workshop demo accounts</summary>
+            <p>Public: S0000001A / citizen123</p>
+            <p>Admin: S0000002B / admin123</p>
+          </details>
+        </div>
+      </section>
+    </main>
+  );
 }

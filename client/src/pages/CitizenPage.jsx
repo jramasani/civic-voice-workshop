@@ -1,9 +1,43 @@
 import { useState } from "react";
-import { action, submitFeedback } from "../api";
-const categories = ["Estate", "Transport", "Environment", "Other"];
-export function CitizenPage({ session }) {
-  const [message, setMessage] = useState(""), [category, setCategory] = useState("Other"), [result, setResult] = useState(null), [error, setError] = useState(""), [audio, setAudio] = useState(null);
-  async function submit(event) { event.preventDefault(); const value = message.trim(); if (!value) return setError("Please enter feedback that is not blank."); if (value.length > 500) return setError("Feedback must be 500 characters or fewer."); setError(""); try { setResult(await submitFeedback(session, { message: value, category })); setMessage(""); } catch (e) { setError(e.message); } }
-  async function speak() { try { const result = await action(session, result.feedback.id, "audio"); setAudio(`data:${result.mimeType || "audio/mpeg"};base64,${result.audioBase64}`); } catch (e) { setError(e.message); } }
-  return <main className="page-shell"><div className="page-heading"><div className="eyebrow">Public feedback</div><h1>What would you like us to know?</h1></div><section className="form-card">{result ? <div className="success-banner" role="status"><h2>Thank you — your feedback was received.</h2><p>Your reference is <strong>{result.reference}</strong>.</p>{audio ? <audio controls src={audio} /> : <button className="text-button" onClick={speak}>Read feedback aloud</button>}<button className="primary-button" onClick={() => { setResult(null); setError(""); setAudio(null); }}>Submit another</button></div> : <form onSubmit={submit}><label htmlFor="category">Category<select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>{categories.map((item) => <option key={item}>{item}</option>)}</select></label><label htmlFor="feedback">Your feedback<textarea id="feedback" rows="7" value={message} maxLength="500" aria-describedby="count" aria-invalid={!!error} onChange={(e) => setMessage(e.target.value)} placeholder="Share your feedback here..." /></label><div className="form-footer"><span id="count" className="muted">{message.length}/500 characters</span><button className="primary-button">Submit feedback</button></div></form>}{error && <p className="error-message" role="alert">{error}</p>}</section></main>;
+import { submitFeedback } from "../api";
+
+export function CitizenPage({ user }) {
+  const [message, setMessage] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+    try {
+      await submitFeedback({ nric: user.nric, name: user.name, message });
+      setSubmitted(true);
+      setMessage("");
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  return (
+    <main className="page-shell">
+      <div className="page-heading">
+        <div className="eyebrow">Public feedback</div>
+        <h1>What would you like us to know?</h1>
+        <p>Tell us about an issue, an idea, or a positive experience in your community.</p>
+      </div>
+      <section className="form-card">
+        {submitted && <div className="success-banner">Thank you. Your feedback has been received.</div>}
+        <form onSubmit={handleSubmit}>
+          <label>Your feedback
+            <textarea rows="7" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Share your feedback here..." />
+          </label>
+          <div className="form-footer">
+            <span className="muted">Please do not include sensitive personal information.</span>
+            <button className="primary-button">Submit feedback</button>
+          </div>
+          {error && <p className="error-message">{error}</p>}
+        </form>
+      </section>
+    </main>
+  );
 }
